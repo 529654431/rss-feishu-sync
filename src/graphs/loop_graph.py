@@ -91,20 +91,25 @@ def write_to_feishu_node(
     desc: 将单个RSS条目写入飞书多维表格
     integrations: 飞书多维表格
     """
+    logger = logging.getLogger(__name__)
+    logger.info(f"write_to_feishu_node被调用: current_index={state.current_index}, total_items={len(state.items)}")
+    
     if state.current_index >= len(state.items):
+        logger.info(f"循环结束: current_index >= len(items)")
         return state
     
     # 获取当前条目
     item = state.items[state.current_index]
+    logger.info(f"处理条目: {item.get('title', '')}")
     
     try:
-        # 构建飞书记录
+        # 构建飞书记录（映射到现有字段）
         record = {
             "fields": {
-                "标题": item.get("title", ""),
-                "链接": item.get("link", ""),
-                "发布时间": item.get("published", ""),
-                "描述": item.get("description", "")
+                "聊天记录": item.get("title", ""),
+                "消息链接": {"link": item.get("link", "")},  # URL字段需要对象格式
+                "时间": item.get("published", ""),
+                "发送日期": item.get("description", "")  # 使用"发送日期"字段存储描述
             }
         }
         
@@ -114,21 +119,25 @@ def write_to_feishu_node(
             table_id=state.table_id,
             records=[record]
         )
+        logger.info(f"成功写入飞书: {item.get('title', '')}")
         
         # 添加到已处理列表
         processed_items = state.processed_items.copy()
         processed_items.append(item)
         
         # 更新状态
-        return state.model_copy(
+        new_state = state.model_copy(
             update={
                 "processed_items": processed_items,
                 "current_index": state.current_index + 1
             }
         )
+        logger.info(f"更新状态: processed_items长度={len(new_state.processed_items)}, new_index={new_state.current_index}")
+        
+        return new_state
     except Exception as e:
         # 记录错误但继续处理下一条
-        print(f"写入飞书失败: {e}")
+        logger.error(f"写入飞书失败: {e}")
         return state.model_copy(
             update={
                 "current_index": state.current_index + 1
