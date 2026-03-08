@@ -1,0 +1,49 @@
+name: RSS监测与飞书同步
+description: 每小时整点监测RSS链接，将新内容自动写入飞书多维表格
+
+# 定时触发配置
+triggers:
+  - type: cron
+    name: hourly_rss_check
+    description: 每小时整点执行RSS监测
+    cron: "0 * * * *"  # 每小时的第0分钟执行（即整点）
+    timezone: "Asia/Shanghai"  # 使用中国时区
+    enabled: true
+    input:
+      rss_url: "https://cn.investing.com/rss/news_285.rss"
+      app_token: "KqLSb9eeqaOYstsryBMcCiJTnkc"
+      table_id: "tbl6xkic4IuaOH6u"
+
+# 输入参数定义
+inputs:
+  rss_url:
+    type: string
+    description: RSS链接地址
+    required: true
+  app_token:
+    type: string
+    description: 飞书多维表格app_token
+    required: true
+  table_id:
+    type: string
+    description: 飞书多维表格table_id
+    required: true
+
+# 输出参数定义
+outputs:
+  result_message:
+    type: string
+    description: 执行结果消息
+  processed_count:
+    type: integer
+    description: 处理的条目数量
+
+# 监控配置
+monitoring:
+  timeout: 900  # 15分钟超时
+  retry:
+    max_attempts: 3
+    delay: 60  # 重试延迟60秒
+  alerts:
+    on_failure: true
+    on_timeout: true
