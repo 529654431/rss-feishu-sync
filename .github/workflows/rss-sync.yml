@@ -1,0 +1,55 @@
+name: RSS监测与飞书同步
+
+on:
+  # 定时触发：每小时整点执行
+  schedule:
+    - cron: '0 * * * *'
+  
+  # 支持手动触发（用于测试）
+  workflow_dispatch:
+
+  # 支持代码提交后手动测试（可选）
+  push:
+    branches:
+      - main
+
+jobs:
+  rss-sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. 检出代码
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      # 2. 设置Python环境
+      - name: 设置Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      # 3. 安装依赖
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install feedparser requests python-dotenv
+      
+      # 4. 运行RSS同步脚本
+      - name: 执行RSS同步
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RSS_URL: https://cn.investing.com/rss/news_285.rss
+          FEISHU_APP_TOKEN: ${{ secrets.FEISHU_APP_TOKEN }}
+          FEISHU_TABLE_ID: ${{ secrets.FEISHU_TABLE_ID }}
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        run: |
+          python actions_run.py
+      
+      # 5. 输出结果摘要
+      - name: 输出执行结果
+        if: always()
+        run: |
+          echo "RSS同步工作流执行完成！"
+          echo "查看飞书表格确认结果"
